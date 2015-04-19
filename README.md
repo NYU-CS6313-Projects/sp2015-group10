@@ -1,6 +1,6 @@
-# Project X
+# Visualizing Health Data
 
-TODO describe project here
+In this project, we are focused on visualizing health costs by diagnosis types.
 
 A live demo can be found [here](http://NYU-CS6313-Projects.github.io/sp2015-group10/).
 
