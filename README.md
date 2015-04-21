@@ -1,4 +1,4 @@
-# Project X
+# Visualizing Health Data
 
 TODO describe project here
 
