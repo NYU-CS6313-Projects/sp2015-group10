@@ -1,88 +1,162 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title></title>
-    <!-- Load the D3 Library -->
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"> </script>
-        <style type="text/css">
-
-		td, th {
-		    padding: 2px 4px;
-		}
-
-		th {
-		    font-weight: bold;
-		}
-
-        </style>
- </head>
-
-
- <div id="container"></div>
-
- <body>
- 	<script type="text/javascript">
-
-// function to link csv to html table
-function tabulate(data, columns) {
-    var table = d3.select("#container").append("table"),
-        thead = table.append("thead"),
-        tbody = table.append("tbody");
-
-    // append the header row
-    thead.append("tr")
-        .selectAll("th")
-        .data(columns)
-        .enter()
-        .append("th")
-            .text(function(column) { return column; });
-
-    // create a row for each object in the data
-    var rows = tbody.selectAll("tr")
-        .data(data)
-        .enter()
-        .append("tr");
-
-    // create a cell in each row for each column
-    var cells = rows.selectAll("td")
-        .data(function(row) {
-            return columns.map(function(column) {
-                return {column: column, value: row[column]};
-            });
-        })
-        .enter()
-        .append("td")
-            .text(function(d) { return d.value; });
-    
-    return table;
+ <meta charset="utf-8">
+ <title>Avergae Cost by Patient - Alzheimer - Choropleth</title>
+ <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+ <script type="text/javascript" src="http://d3js.org/queue.v1.min.js"></script>
+ <script type="text/javascript" src="http://d3js.org/topojson.v1.min.js"></script>
+ 
+</head>
+<style>
+ 
+path {
+ stroke:white;
+ stroke-width: 1px;
 }
+ 
+body {
+ font-family: Arial, sans-serif;
+}
+ 
+ .bubble {
+  fill-opacity: .5;
+  stroke: #fff;
+  stroke-width: .5px;
+}
+ 
+.city {
+ font: 10px sans-serif;
+ font-weight: bold;
+}
+ 
+.legend {
+ font-size: 12px;
+}
+ 
+div.tooltip {
+ position: absolute;
+ text-align: center;
+ width: 150px;
+ height: 25px;
+ padding: 2px;
+ font-size: 10px;
+ background: #FFFFE0;
+ border: 1px;
+ border-radius: 8px;
+ pointer-events: none;
+}
+</style>
+<body>
+<h1> Average cost of patient by county - Cancer</h1>
+ <script type="text/javascript">
+ var width = 960,
+ height = 500;
+	var color_domain = [1, 2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+ var ext_color_domain = [1, 2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+ var legend_labels = ["< 1", "1+", "2.5+", "5+", "10+", "20+", "30+", "40+", "50+", "60+", "70+", "80", "90+"]
 
-var peopleTable = d3.csv("total_by_county.csv", function(data) {
-  tabulate(data, ["state", "county", "Total"]);
-});
+ var color = d3.scale.threshold()
+ .domain(color_domain)
+ .range(["#dcdcdc", "#d0d6cd", "#bdc9be", "#aabdaf", "#97b0a0", "#84a491", "#719782", "#5e8b73", "#4b7e64", "#387255", "#256546", "#125937", "#004d28"]);
+ 
+var div = d3.select("body").append("div")
+ .attr("class", "tooltip")
+ .style("opacity", 0);
+ 
+var svg = d3.select("body").append("svg")
+ .attr("width", width)
+ .attr("height", height)
+ .style("margin", "10px auto");
+ var path = d3.geo.path()
+ 
+ var radius = d3.scale.sqrt()
+    .domain([0, 10000])
+    .range([0, 10]);
+ 
+queue()
+ .defer(d3.json, "us.json")
+ .defer(d3.csv, "data/Cancer.csv")
+ .await(ready);
+ 
+
+ 
+function ready(error, us, data) {
+ var pairCostWithId = {};
+ var pairNameWithId = {};
+ var pairPerPopWithId = {};
+ 
+data.forEach(function(d) {
+ pairCostWithId[d.id] = +d.avg_cost;
+ pairNameWithId[d.id] = d.name;
+ pairPerPopWithId[d.id] = d.percent_pop;
+ });
+ svg.append("g")
+ .attr("class", "county")
+ .selectAll("path")
+ .data(topojson.feature(us, us.objects.counties).features)
+ .enter().append("path")
+ .attr("d", path)
+ //.style("fill", "steelblue")
+ .style ( "fill" , function (d) {
+ return color (pairPerPopWithId[d.id]);
+ }) ;  // changes
+ 
+ 
+ svg.append("g")
+    .attr("class", "bubble")
+  .selectAll("circle")
+    .data(topojson.feature(us, us.objects.counties).features
+      .sort(function(d) { return pairCostWithId[d.id] - pairCostWithId[d.id]  ;}))
+  .enter().append("circle")
+    .attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+    .attr("r", function(d) { return radius(pairCostWithId[d.id]); })
+  .style("opacity", 0.8)
+ .on("mouseover", function(d) {
+ d3.select(this).transition().duration(300).style("opacity", 1);
+ div.transition().duration(300)
+ .style("opacity", 1)
+ div.text(pairNameWithId[d.id] + " : " + pairCostWithId[d.id])
+ .style("left", (d3.event.pageX) + "px")
+ .style("top", (d3.event.pageY -30) + "px");
+ })
+ .on("mouseout", function() {
+ d3.select(this)
+ .transition().duration(300)
+ .style("opacity", 0.8);
+ div.transition().duration(300)
+ .style("opacity", 0);
+ })
+ 
+ };
+ 
+var legend = svg.selectAll("g.legend")
+ .data(ext_color_domain)
+ .enter().append("g")
+ .attr("class", "legend");
+ 
+var ls_w = 20, ls_h = 20;
+ 
+legend.append("rect")
+ .attr("x", 20)
+ .attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
+ .attr("width", ls_w)
+ .attr("height", ls_h)
+ .style("fill", function(d, i) { return color(d); })
+ .style("opacity", 0.8);
+ 
+legend.append("text")
+ .attr("x", 50)
+ .attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
+ .text(function(d, i){ return legend_labels[i]; });
+ 
+</script>
+</body>
+</html>
 
 
-// uppercase the column headers
-peopleTable.selectAll("thead th")
-    .text(function(column) {
-        return column.charAt(0).toUpperCase() + column.substr(1);
-    });
-    
-// sort
-peopleTable.selectAll("tbody tr")
-    .sort(function(a, b) {
-        return d3.descending(a.Total, b.Total);
-    });
 
 
-
-	</script>
-
-
- </body>
-
-
- </html>
 
 

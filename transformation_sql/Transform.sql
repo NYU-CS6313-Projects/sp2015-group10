@@ -43,29 +43,27 @@ select
 	case when "SP_RA_OA" = '1' then 'RA/OA,' else '' end ||
 	case when "SP_STRKETIA" = '1' then 'Stroke' else '' end)  as chronic_disease_list
 from "2009_Beneficiary_Summary_File"),
+
 main as(
 select a.state_cd
 	,a.cnty_cd
-	,cast(a.chronic_disease as varchar) chronic_disease
-	,avg_cost 
 	,count(*) as population
-from (select state_cd
-	,cnty_cd
-	,chronic_disease
-	,avg(cost) as avg_cost from chronic where chronic_disease<>'' group by state_cd,cnty_cd,chronic_disease)  a
-	join chronic_list b on a.state_cd=b.state_cd and a.cnty_cd=b.cnty_cd and b.chronic_disease_list like '%'||a.chronic_disease||'%'
-where a.chronic_disease <>''
-group by a.state_cd
-	,a.cnty_cd
-	,a.chronic_disease
-	,avg_cost
-order by a.chronic_disease,population desc),
+	,c.chronic_disease
+	,b.avg_cost
+from chronic_list a
+	join diseases c on 1=1
+	left join (select state_cd,cnty_cd,chronic_disease,avg(cost) as avg_cost from chronic group by state_cd,cnty_cd,chronic_disease) b
+	on b.state_cd=a.state_cd and b.cnty_cd=a.cnty_cd and b.chronic_disease=c.chronic_disease
+where chronic_disease_list like '%'||c.chronic_disease||'%'
+group by a.state_cd,a.cnty_cd,c.chronic_disease,b.avg_cost),
+
 population as(
 select state_cd
 	,cnty_cd
 	,count(*) as cnty_pop
 from chronic c
 group by state_cd,cnty_cd)
+
 ,costs as(
 select chronic_disease
 	,avg(cost) as us_avg
@@ -80,11 +78,11 @@ select  cc.fips_state_cty_code as fips_cnty_cd
 	,main.*
 	,p.cnty_pop
 	,round(100.00*main.population/cnty_pop,2) as percent_pop
-	,c.us_avg
-	,c.cost_variance
-	,c.std_dev
-	,case when main.avg_cost > c.us_avg+c.std_dev then main.avg_cost-(c.us_avg+c.std_dev)
-		when main.avg_cost < c.us_avg-c.std_dev then c.us_avg-c.std_dev-main.avg_cost
+	,round(c.us_avg,2) as us_avg
+	,round(c.cost_variance,2) as cost_variance
+	,round(c.std_dev,2) as std_dev
+	,case when main.avg_cost > c.us_avg+c.std_dev then round(main.avg_cost-(c.us_avg+c.std_dev),2)
+		when main.avg_cost < c.us_avg-c.std_dev then round(c.us_avg-c.std_dev-main.avg_cost,2)
 		else 0 end as dif_from_dev
 	,cast((case when main.avg_cost > c.us_avg+c.std_dev then 'high'
 		when main.avg_cost < c.us_avg-c.std_dev then 'low' end) as varchar) as cost_flag
