@@ -53,13 +53,21 @@ div.tooltip {
  <script type="text/javascript">
  var width = 960,
  height = 500;
-	var color_domain = [1, 2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]
- var ext_color_domain = [1, 2.5, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]
- var legend_labels = ["< 1", "1+", "2.5+", "5+", "10+", "20+", "30+", "40+", "50+", "60+", "70+", "80", "90+"]
+	var color_domain = [10, 20, 30, 40, 50, 60, 70, 80]
+ var ext_color_domain = [0, 10, 20, 30, 40, 50, 60, 70, 80]
+ var legend_labels = ["< 10%", "10%+", "20%+", "30%+", "40%+", "50%+", "60%+", "70%+", "80%+"]
 
  var color = d3.scale.threshold()
  .domain(color_domain)
- .range(["#dcdcdc", "#d0d6cd", "#bdc9be", "#aabdaf", "#97b0a0", "#84a491", "#719782", "#5e8b73", "#4b7e64", "#387255", "#256546", "#125937", "#004d28"]);
+ .range(["#ffffcc",
+"#ffeda0",
+"#fed976",
+"#feb24c",
+"#fd8d3c",
+"#fc4e2a",
+"#e31a1c",
+"#bd0026",
+"#800026"]);
  
 var div = d3.select("body").append("div")
  .attr("class", "tooltip")
@@ -88,8 +96,8 @@ function ready(error, us, data) {
  var pairPerPopWithId = {};
  
 data.forEach(function(d) {
- pairCostWithId[d.id] = +d.avg_cost;
- pairNameWithId[d.id] = d.name;
+ pairCostWithId[d.id] = +d.dif_from_dev;
+ pairNameWithId[d.id] = d.cnty_name;
  pairPerPopWithId[d.id] = d.percent_pop;
  });
  svg.append("g")
@@ -101,7 +109,24 @@ data.forEach(function(d) {
  //.style("fill", "steelblue")
  .style ( "fill" , function (d) {
  return color (pairPerPopWithId[d.id]);
- }) ;  // changes
+ }) 
+  .style("opacity", 0.8)
+ .on("mouseover", function(d) {
+ d3.select(this).transition().duration(300).style("opacity", 1);
+ div.transition().duration(300)
+ .style("opacity", 1)
+ div.text(pairNameWithId[d.id] + " : " + pairPerPopWithId[d.id])
+ .style("left", (d3.event.pageX) + "px")
+ .style("top", (d3.event.pageY -30) + "px");
+ })
+ .on("mouseout", function() {
+ d3.select(this)
+ .transition().duration(300)
+ .style("opacity", 0.8);
+ div.transition().duration(300)
+ .style("opacity", 0);
+ })
+;  // changes
  
  
  svg.append("g")
