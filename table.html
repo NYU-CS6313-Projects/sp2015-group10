@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style type="text/css">
+
+table {
+  border-collapse: collapse;
+  font: 10px sans-serif;
+  width: 720px;
+}
+
+th {
+  font-weight: normal;
+  text-align: right;
+  padding-right: 20px;
+  min-width: 75px;
+}
+
+thead td {
+  cursor: s-resize;
+}
+
+tbody tr:first-child td {
+  padding-top: 2px;
+}
+
+tbody td {
+  padding: 0;
+  border-left: solid 1px #000;
+}
+
+tbody rect {
+  fill: steelblue;
+}
+
+tbody tr:hover rect {
+  fill: brown;
+}
+
+</style>
+
+<table>
+  <thead>
+    <tr>
+      <th>Chronic Disease List</th>
+      <td>Avg Pop</td>
+      <td>Population</td>
+	  <td>Variance</td>
+	  <td>Std Dev</td>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<script src="http://d3js.org/d3.v2.min.js"></script>
+<script>
+
+d3.csv("listdata.csv", function(states) {
+  var ages = d3.keys(states[0]).filter(function(key) {
+    return key != "chronic_disease_list";
+  });
+
+  d3.selectAll("thead td").data(ages).on("click", function(k) {
+    tr.sort(function(a, b) { return (b[k]/ 2000)  - (a[k]/ 2000); });
+  });
+
+  var tr = d3.select("tbody").selectAll("tr")
+      .data(states)
+    .enter().append("tr");
+
+  tr.append("th")
+      .text(function(d) { return d.chronic_disease_list; });
+
+  tr.selectAll("td")
+      .data(function(d) { return ages.map(function(k) { return d[k] / 1000; }); })
+    .enter().append("td").append("svg")
+      .attr("width", 20)
+      .attr("height", 15)
+    .append("rect")
+      .attr("height", 12)
+      .attr("width", function(d) { return d * 71; });
+});
+
+</script>
