@@ -49,13 +49,13 @@ div.tooltip {
 }
 </style>
 <body>
-<h1> Average cost of patient by county - Cancer</h1>
+<h1>Cancer Distribution by County with Cost Outliers</h1>
  <script type="text/javascript">
  var width = 960,
  height = 500;
-	var color_domain = [10, 20, 30, 40, 50, 60, 70, 80]
- var ext_color_domain = [0, 10, 20, 30, 40, 50, 60, 70, 80]
- var legend_labels = ["< 10%", "10%+", "20%+", "30%+", "40%+", "50%+", "60%+", "70%+", "80%+"]
+	var color_domain = [1, 5, 10, 20, 35, 50, 70, 90]
+ var ext_color_domain = [0, 1, 5, 10, 20, 35, 50, 70, 90]
+ var legend_labels = ["< 1%", "1%+", "5+", "10%+", "20%+", "35%+", "50%+", "70%+", "90%+"]
 
  var color = d3.scale.threshold()
  .domain(color_domain)
@@ -94,11 +94,13 @@ function ready(error, us, data) {
  var pairCostWithId = {};
  var pairNameWithId = {};
  var pairPerPopWithId = {};
+ var pairPopWithId = {};
  
 data.forEach(function(d) {
  pairCostWithId[d.id] = +d.dif_from_dev;
  pairNameWithId[d.id] = d.cnty_name;
  pairPerPopWithId[d.id] = d.percent_pop;
+ pairPopWithId[d.id]=d.population;
  });
  svg.append("g")
  .attr("class", "county")
@@ -115,7 +117,7 @@ data.forEach(function(d) {
  d3.select(this).transition().duration(300).style("opacity", 1);
  div.transition().duration(300)
  .style("opacity", 1)
- div.text(pairNameWithId[d.id] + " : " + pairPerPopWithId[d.id])
+ div.text(pairNameWithId[d.id] + " : " + pairPerPopWithId[d.id]+"%")
  .style("left", (d3.event.pageX) + "px")
  .style("top", (d3.event.pageY -30) + "px");
  })
