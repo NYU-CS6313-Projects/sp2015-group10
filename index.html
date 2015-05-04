@@ -1,19 +1,66 @@
 
-<!DOCTYPE html>
+<!DO"+ctype+" html>
 <html lang="en">
 <head>
  <meta charset="utf-8">
- <title>Avergae Cost by Patient - Alzheimer - Choropleth</title>
+ <title>Chronic Diseases</title>
  <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
  <script type="text/javascript" src="http://d3js.org/queue.v1.min.js"></script>
  <script type="text/javascript" src="http://d3js.org/topojson.v1.min.js"></script>
- 
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<link href="http://www.jqueryscript.net/css/jquerysctipttop.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<script type="text/javascript">
+        var people, asc1 = 1,
+            asc2 = 1,
+            asc3 = 1;
+        window.onload = function () {
+            people = document.getElementById("people");
+        }
+
+        function sort_table(tbody, col, asc) {
+            var rows = tbody.rows,
+                rlen = rows.length,
+                arr = new Array(),
+				cid = new Array(),
+                i, j, cells, clen;
+            // fill the array with values from the table
+            for (i = 0; i < rlen; i++) {
+                cells = rows[i].cells;
+                clen = cells.length;
+                arr[i] = new Array();
+				
+                for (j = 0; j < clen; j++) {
+                    arr[i][j] = cells[j].innerHTML;
+					cid[i]=cells[j].innerHTML;
+                }
+            }
+            // sort the array by the specified column number (col) and order (asc)
+            arr.sort(function (a, b) {
+                return (a[col] == b[col]) ? 0 : ((a[col] > b[col]) ? asc : -1 * asc);
+            });
+            // replace existing rows with new rows created from the sorted array
+			var ltext;
+			var Cancer=arr[1][0];
+            for (i = 0; i < rlen; i++) {
+				ltext="onClick=\"changeSrc('"+arr[i][0].substring(15,arr[i][0].length-7)+"')\"";
+                rows[i].innerHTML = "<td "+ltext+">"+arr[i].join("</td><td>") + "</td>";
+            }
+        }
+</script>
 </head>
 <style>
  
 path {
  stroke:white;
  stroke-width: 1px;
+}
+
+td.last {
+    width: 1px;
+    white-space: nowrap;
 }
  
 body {
@@ -49,8 +96,14 @@ div.tooltip {
 }
 </style>
 <body>
-<h1>Cancer Distribution by County with Cost Outliers</h1>
+<h1>Chronic Disease Distribution by County</h1>
+<table>
+<tr><td>
+<div id="CSVTable"></div></tr></td>
+</table>
  <script type="text/javascript">
+
+ function changeSrc(newSrc){
  var width = 960,
  height = 500;
 	var color_domain = [1, 5, 10, 20, 35, 50, 70, 90]
@@ -69,11 +122,13 @@ div.tooltip {
 "#bd0026",
 "#800026"]);
  
-var div = d3.select("body").append("div")
+var div = d3.select("tr").append("div")
  .attr("class", "tooltip")
  .style("opacity", 0);
  
-var svg = d3.select("body").append("svg")
+ d3.select("svg").remove();
+ 
+var svg = d3.select("tr").append("svg")
  .attr("width", width)
  .attr("height", height)
  .style("margin", "10px auto");
@@ -83,9 +138,11 @@ var svg = d3.select("body").append("svg")
     .domain([0, 10000])
     .range([0, 10]);
  
+srcFile=newSrc;
+
 queue()
  .defer(d3.json, "us.json")
- .defer(d3.csv, "data/Cancer.csv")
+ .defer(d3.csv, "data/"+srcFile+".csv")
  .await(ready);
  
 
@@ -100,7 +157,7 @@ data.forEach(function(d) {
  pairCostWithId[d.id] = +d.dif_from_dev;
  pairNameWithId[d.id] = d.cnty_name;
  pairPerPopWithId[d.id] = d.percent_pop;
- pairPopWithId[d.id]=d.population;
+ pairPopWithId[d.id]=d.cnty_pop;
  });
  svg.append("g")
  .attr("class", "county")
@@ -117,7 +174,7 @@ data.forEach(function(d) {
  d3.select(this).transition().duration(300).style("opacity", 1);
  div.transition().duration(300)
  .style("opacity", 1)
- div.text(pairNameWithId[d.id] + " : " + pairPerPopWithId[d.id]+"%")
+ div.text(pairNameWithId[d.id] + " : " + pairPerPopWithId[d.id]+"% of "+pairPopWithId[d.id])
  .style("left", (d3.event.pageX) + "px")
  .style("top", (d3.event.pageY -30) + "px");
  })
@@ -177,9 +234,57 @@ legend.append("text")
  .attr("x", 50)
  .attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
  .text(function(d, i){ return legend_labels[i]; });
- 
+ }
 </script>
+
 </body>
+
+<script>
+$.get('data/listdata.csv', function(data) {
+
+	// start the table	
+	var html = '<table class="table table-hover">';
+
+	// split into lines
+	var rows = data.split("\n");
+	// parse lines
+	rows.forEach( function getvalues(ourrow) {
+		// split line into columns
+		var ctype="td";
+		var ctype2;
+		var ctype3;
+		var columns = ourrow.split(",");
+		if (columns[0] == "0"){
+			html += "<thead>";
+			ctype = "th onClick=\"sort_table(chronic, 0, asc1); asc1 *= -1; asc2 = 1; asc3 = 1;\"";
+			ctype2="th";
+			ctype3="th></thead><tbody id=chronic>";
+			}
+		else {
+			ctype = "td onClick=\"changeSrc('"+columns[1]+"')\"";
+			ctype2="td";
+			ctype3="td>";
+			}
+		// start a table row
+		html += "<tr id=\"menu\" >";
+		html += "<"+ctype+"><font size=1>" + columns[1] + "</font></"+ctype2+">";
+		html += "<"+ctype+"><font size=1>" + columns[2] + "</font></"+ctype2+">";
+		//html += "<"+ctype+"><font size=1>" + columns[3] + "</font></"+ctype+">";
+		html += "<"+ctype+"><font size=1>" + columns[4] + "</font></"+ctype2+">";
+		html += "<"+ctype+"><font size=1>" + columns[5] + "</font></"+ctype2+">";
+		html += "<"+ctype+"><font size=1>" + columns[6] + "</font></"+ctype3;
+		
+		// close row
+		html += "</tr>";		
+	})
+	// close table
+	html += "</tbody></table>";
+
+	// insert into div
+	$('#CSVTable').append(html);
+	
+});
+</script>
 </html>
 
 
