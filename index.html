@@ -63,6 +63,10 @@ td.last {
     white-space: nowrap;
 }
  
+ .header{
+	cursor: pointer;
+	}
+ 
 body {
  font-family: Arial, sans-serif;
 }
@@ -96,31 +100,32 @@ div.tooltip {
 }
 </style>
 <body>
-<h1>Chronic Disease Distribution by County</h1>
+<h1>Chronic Disease Distribution and Associated Costs in Medicare Patients</h1>
+<h5>Instructions: Click on a disease to display the distribution of Medicare patients for that disease.  Use the row headers to sort</h5>
 <table>
 <tr><td>
 <div id="CSVTable"></div></tr></td>
 </table>
  <script type="text/javascript">
-
  function changeSrc(newSrc){
  var width = 960,
  height = 500;
-	var color_domain = [1, 5, 10, 20, 35, 50, 70, 90]
- var ext_color_domain = [0, 1, 5, 10, 20, 35, 50, 70, 90]
- var legend_labels = ["< 1%", "1%+", "5+", "10%+", "20%+", "35%+", "50%+", "70%+", "90%+"]
+	var color_domain = [0,1, 5, 10, 20, 35, 50, 70, 90]
+ var ext_color_domain = [-1,0, 1, 5, 10, 20, 35, 50, 70, 90]
+ var legend_labels = ["no data","< 1%", "1%+", "5+", "10%+", "20%+", "35%+", "50%+", "70%+", "90%+"]
 
  var color = d3.scale.threshold()
  .domain(color_domain)
- .range(["#ffffcc",
-"#ffeda0",
-"#fed976",
-"#feb24c",
-"#fd8d3c",
-"#fc4e2a",
-"#e31a1c",
-"#bd0026",
-"#800026"]);
+ .range(["#e6e6e6",
+ "#fff7ec",
+"#fee8c8",
+"#fdd49e",
+"#fdbb84",
+"#fc8d59",
+"#ef6548",
+"#d7301f",
+"#b30000",
+"#7f0000"]);
  
 var div = d3.select("tr").append("div")
  .attr("class", "tooltip")
@@ -137,6 +142,8 @@ var svg = d3.select("tr").append("svg")
  var radius = d3.scale.sqrt()
     .domain([0, 10000])
     .range([0, 10]);
+	
+
  
 srcFile=newSrc;
 
@@ -152,12 +159,18 @@ function ready(error, us, data) {
  var pairNameWithId = {};
  var pairPerPopWithId = {};
  var pairPopWithId = {};
+ var pairAvgWithId = {};
+ var pairHighWithId = {};
+ var pairLowWithId = {};
  
 data.forEach(function(d) {
  pairCostWithId[d.id] = +d.dif_from_dev;
  pairNameWithId[d.id] = d.cnty_name;
  pairPerPopWithId[d.id] = d.percent_pop;
  pairPopWithId[d.id]=d.cnty_pop;
+ pairAvgWithId[d.id]=d.avg_cost;
+ pairHighWithId[d.id]=d.high_cost;
+ pairLowWithId[d.id]=d.low_cost;
  });
  svg.append("g")
  .attr("class", "county")
@@ -171,12 +184,29 @@ data.forEach(function(d) {
  }) 
   .style("opacity", 0.8)
  .on("mouseover", function(d) {
+   var avgText;
+  if ( pairAvgWithId[d.id]==0){
+	avgText="<br/>average cost: insufficient data";
+	}
+	else {
+	avgText="<br/>Average Cost : $"+pairAvgWithId[d.id]+"<br/>Highest Cost : $"+pairHighWithId[d.id]+"<br/>Lowest Cost : $"+pairLowWithId[d.id];
+	}
+  var hText;
+  if (pairPerPopWithId[d.id]==-1){
+	hText = "no data";
+	}
+	else{
+	hText = pairNameWithId[d.id] + " : " + pairPerPopWithId[d.id]+"% of "+pairPopWithId[d.id]+avgText;
+	}
+
  d3.select(this).transition().duration(300).style("opacity", 1);
  div.transition().duration(300)
  .style("opacity", 1)
- div.text(pairNameWithId[d.id] + " : " + pairPerPopWithId[d.id]+"% of "+pairPopWithId[d.id])
+ div.html(hText)
  .style("left", (d3.event.pageX) + "px")
- .style("top", (d3.event.pageY -30) + "px");
+ .style("top", (d3.event.pageY -30) + "px")
+ .style("height",70+"px");
+
  })
  .on("mouseout", function() {
  d3.select(this)
@@ -198,12 +228,27 @@ data.forEach(function(d) {
     .attr("r", function(d) { return radius(pairCostWithId[d.id]); })
   .style("opacity", 0.8)
  .on("mouseover", function(d) {
+    var avgText;
+  if ( pairAvgWithId[d.id]==0){
+	avgText="<br/>average cost: insufficient data";
+	}
+	else {
+	avgText="<br/>Average Cost : $"+pairAvgWithId[d.id]+"<br/>Highest Cost : $"+pairHighWithId[d.id]+"<br/>Lowest Cost : $"+pairLowWithId[d.id];
+	}
+  var hText;
+  if (pairPerPopWithId[d.id]==-1){
+	hText = "no data";
+	}
+	else{
+	hText = pairNameWithId[d.id] + " : " + pairPerPopWithId[d.id]+"% of "+pairPopWithId[d.id]+avgText;
+	}
  d3.select(this).transition().duration(300).style("opacity", 1);
  div.transition().duration(300)
  .style("opacity", 1)
- div.text(pairNameWithId[d.id] + " : " + pairCostWithId[d.id])
+ div.html(hText)
  .style("left", (d3.event.pageX) + "px")
- .style("top", (d3.event.pageY -30) + "px");
+ .style("top", (d3.event.pageY -30) + "px")
+ .style("height",70+"px");
  })
  .on("mouseout", function() {
  d3.select(this)
@@ -256,7 +301,7 @@ $.get('data/listdata.csv', function(data) {
 		var columns = ourrow.split(",");
 		if (columns[0] == "0"){
 			html += "<thead>";
-			ctype = "th onClick=\"sort_table(chronic, 0, asc1); asc1 *= -1; asc2 = 1; asc3 = 1;\"";
+			ctype = "th class=\"header\" onClick=\"sort_table(chronic, 0, asc1); asc1 *= -1; asc2 = 1; asc3 = 1;\"";
 			ctype2="th";
 			ctype3="th></thead><tbody id=chronic>";
 			}
