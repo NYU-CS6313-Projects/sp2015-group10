@@ -148,7 +148,7 @@ var svg = d3.select("tr").append("svg")
 srcFile=newSrc;
 
 queue()
- .defer(d3.json, "data/us.json")
+ .defer(d3.json, "data/us.json")  // was looking in the wrong directory for this before
  .defer(d3.csv, "data/"+srcFile+".csv")
  .await(ready);
  
