@@ -114,7 +114,7 @@ div.tooltip {
 <body>
 <h1>Chronic Disease Distribution and Associated Costs in Medicare Patients</h1>
 <h5>Instructions: Click on a disease to display the distribution of Medicare patients for that disease.  Use the row headers to sort</h5>
-<a href="index_county.html">Show Bubbles Representing Average Cost Per County</a>
+<a href="index.html">Show Bubbles Representing the Amount More Than One Standard Deviation Above National Average</a>
 <table>
 <tr><td>
 <div id="CSVTable"></div></tr></td>
@@ -175,6 +175,7 @@ function ready(error, us, data) {
  var pairAvgWithId = {};
  var pairHighWithId = {};
  var pairLowWithId = {};
+ var pairUsAvgWithId = {};
  
 data.forEach(function(d) {
  pairCostWithId[d.id] = +d.dif_from_dev;
@@ -184,6 +185,7 @@ data.forEach(function(d) {
  pairAvgWithId[d.id]=d.avg_cost;
  pairHighWithId[d.id]=d.high_cost;
  pairLowWithId[d.id]=d.low_cost;
+ pairUsAvgWithId[d.id] = d.us_avg;
  });
  svg.append("g")
  .attr("class", "county")
@@ -212,7 +214,7 @@ data.forEach(function(d) {
 	
 	//changed here
 	var perc = Math.round(  pairPopWithId[d.id] * (pairPerPopWithId[d.id]/100));
-	hText = pairNameWithId[d.id] + " : " + perc+" / " +pairPopWithId[d.id] + " = " +pairPerPopWithId[d.id]+"%"+avgText; 
+	hText = pairNameWithId[d.id] + " : " + perc+"/" +pairPopWithId[d.id] + "=" +pairPerPopWithId[d.id]+"%"+avgText; 
 	
 	}
 
@@ -232,7 +234,7 @@ data.forEach(function(d) {
  div.transition().duration(300)
  .style("opacity", 0);
  })
-;  // changes - bubblelegend
+;  // changes - bubble legend
  
  var legend = svg.append("g")
     .attr("class", "legend")
@@ -240,7 +242,7 @@ data.forEach(function(d) {
   .selectAll("g")
     .data([10000, 30000, 100000])
   .enter().append("g");
-
+  
  legend.append("circle")
     .attr("cy", function(d) { return -radius(d); })
     .attr("r", radius);
@@ -250,18 +252,48 @@ legend.append("text")
     .attr("dy", "1.3em")
     .text(d3.format(".1s"));
  
+  //changes - average national cost here
+  
+  
+ var legend = svg.append("g")
+    .attr("class", "legend")
+    .attr("transform", "translate(" + (width - 100) + "," + (height - 300) + ")")
+  .selectAll("g")
+  .data(topojson.feature(us, us.objects.counties).features
+      .sort(function(d) { return pairUsAvgWithId[d.id] - pairUsAvgWithId[d.id]  ;}))
+  .enter().append("g");
+  
+   legend.append("circle")
+   .attr("r", function(d) { return radius(pairUsAvgWithId[d.id]); })
+    
+   legend.append("text")
+    .attr("x", 10)
+ .attr("y", 20)
+   .text(function(d){ return "National Average"; });
+   
+  
+  
+
  
+ // change ends
  
- 
- svg.append("g")
+    svg.append("g")
     .attr("class", "bubble")
   .selectAll("circle")
     .data(topojson.feature(us, us.objects.counties).features
       .sort(function(d) { return pairCostWithId[d.id] - pairCostWithId[d.id]  ;}))
   .enter().append("circle")
     .attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
-    .attr("r", function(d) { return radius(pairCostWithId[d.id]); })
+    .attr("r", function(d) { return radius(pairAvgWithId[d.id]); })
   .style("opacity", 0.8)
+ .on("mouseover", function(d) {
+ d3.select(this).transition().duration(300).style("opacity", 1);
+ div.transition().duration(300)
+ .style("opacity", 1)
+ div.text(pairNameWithId[d.id] + " : " + pairCostWithId[d.id])
+ .style("left", (d3.event.pageX) + "px")
+ .style("top", (d3.event.pageY -30) + "px");
+ })
  .on("mouseover", function(d) {
     var avgText;
   if ( pairAvgWithId[d.id]==0){
@@ -279,7 +311,7 @@ legend.append("text")
 	//hText = pairNameWithId[d.id] + " : " + pairPerPopWithId[d.id]+"% of "+pairPopWithId[d.id]+avgText;
 	  
 	var perc = Math.round(  pairPopWithId[d.id] * (pairPerPopWithId[d.id]/100));
-	hText = pairNameWithId[d.id] + " : " + perc+" / " +pairPopWithId[d.id] + " = " +pairPerPopWithId[d.id]+"%"+avgText; 
+	hText = pairNameWithId[d.id] + " : " + perc+"/" +pairPopWithId[d.id] + "=" +pairPerPopWithId[d.id]+"%"+avgText; 
 	  
    
 	}
